@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.konan.target.HostManager
 
 /**
  * Requests the Kotlin/Native variant for the current host.
- * Does nothing on hosts unsupported by Kotlin/Native, e.g. linux-aarch64 (KT-86717).
+ * Does nothing on hosts unsupported by Kotlin/Native, e.g. Linux on riscv64 (KT-86717).
  *
  * WARNING: the result depends on the host, so the same build may resolve differently on another OS.
  */

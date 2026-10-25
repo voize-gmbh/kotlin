@@ -344,7 +344,7 @@ class CodeConformanceTest {
     }
 
     /**
-     * Build logic must not fail on hosts unsupported by Kotlin/Native, e.g. linux-aarch64 (KT-86717).
+     * Build logic must not fail on hosts unsupported by Kotlin/Native, e.g. Linux on riscv64 (KT-86717).
      * `HostManager.host` and `HostManager.hostName` throw there.
      */
     @Test

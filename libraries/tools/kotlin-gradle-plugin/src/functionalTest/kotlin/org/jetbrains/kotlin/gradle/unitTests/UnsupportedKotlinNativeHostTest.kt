@@ -40,7 +40,7 @@ class UnsupportedKotlinNativeHostTest {
                 configureRepositoriesForTests()
                 multiplatformExtension.linuxX64()
                 evaluate()
-                assertContainsDiagnostic(KotlinToolingDiagnostics.NativeHostNotSupportedError)
+                assertNoDiagnostics(KotlinToolingDiagnostics.NativeHostNotSupportedError)
             }
         }
     }
@@ -148,6 +148,7 @@ class UnsupportedKotlinNativeHostTest {
         // it will fall back to visibleName (e.g., "linux_x64") instead of a human-readable format.
         val expectedFormattedNames = setOf(
             "Linux (x86_64)",
+            "Linux (arm64)",
             "Windows (x86_64)",
             "macOS (arm64)",
         )

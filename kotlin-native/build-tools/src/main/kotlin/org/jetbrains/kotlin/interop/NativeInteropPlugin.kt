@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.dependencies.NativeDependenciesPlugin
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.konan.tasks.KonanJvmInteropTask
 import org.jetbrains.kotlin.konan.target.HostManager
+import org.jetbrains.kotlin.konan.target.KonanTarget
 import org.jetbrains.kotlin.konan.target.TargetWithSanitizer
 import org.jetbrains.kotlin.nativeDistribution.registerNativeBootstrapDistribution
 import org.jetbrains.kotlin.tools.NativePlugin
@@ -348,6 +349,14 @@ open class NativeInteropPlugin : Plugin<Project> {
                     if (HostManager.hostIsMingw) {
                         // Use binary hash as the timestamp in COFF headers.
                         add("-Wl,/Brepro")
+                    }
+                    if (HostManager.host == KonanTarget.LINUX_ARM64) {
+                        // Otherwise clang picks `ld` from the GCC toolchain archive, which is an x86_64 binary.
+                        add("-fuse-ld=lld")
+                        // LLVM's static libraries are built with outline atomics (the clang default on aarch64 Linux), and the
+                        // `__aarch64_*` helpers they call are missing from the toolchain's libgcc 8.3. Link them statically from
+                        // compiler-rt builtins, otherwise loading the library fails with an undefined symbol.
+                        addAll(listOf("--rtlib=compiler-rt", "--unwindlib=libgcc"))
                     }
                 }
                 flags("-shared", "-o", ruleOut(), *ruleInAll(), *ldflags.toTypedArray())

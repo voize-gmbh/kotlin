@@ -24,12 +24,6 @@ class MppUnsupportedKotlinNativeHostIT : KGPDaemonsBaseTest() {
      */
     private val linuxRiscv64HostParameters = listOf("-Dos.name=Linux", "-Dos.arch=riscv64")
 
-    /**
-     * Defines the parameters for a Linux Arm64 host environment.
-     * These parameters are used to specify the operating system name and architecture.
-     */
-    private val linuxArm64HostParameters = listOf("-Dos.name=Linux", "-Dos.arch=aarch64")
-
     @DisplayName("Build multiplatform project should not fail on unsupported native host platforms")
     @GradleTest
     fun testMultiplatformProjectOnUnsupportedHostPlatform(
@@ -141,7 +135,7 @@ class MppUnsupportedKotlinNativeHostIT : KGPDaemonsBaseTest() {
         }
     }
 
-    @DisplayName("KT-81443 `ConfigurationCacheError` on Linux arm64 due to disabled iOS targets")
+    @DisplayName("KT-81443 `ConfigurationCacheError` on an unsupported Linux host due to disabled iOS targets")
     @GradleTest
     fun testConfigurationCacheOnUnsupportedHostPlatform(
         gradleVersion: GradleVersion,
@@ -170,7 +164,7 @@ class MppUnsupportedKotlinNativeHostIT : KGPDaemonsBaseTest() {
                 }
             }
 
-            val args = listOf(":build") + linuxArm64HostParameters
+            val args = listOf(":build") + linuxRiscv64HostParameters
             build(*args.toTypedArray()) {
                 assertTasksExecuted(":build")
             }

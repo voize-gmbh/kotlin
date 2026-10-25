@@ -674,6 +674,9 @@ String platformName(KonanTarget target) {
         case KonanTarget.LINUX_X64:
             result ="linux-x86_64"
             break
+        case KonanTarget.LINUX_ARM64:
+            result = "linux-aarch64"
+            break
         case KonanTarget.MACOS_X64:
             result = "macos-x86_64"
             break
@@ -697,7 +700,9 @@ Map<KonanTarget, File> createConfigurations(List<File> bundles) {
         [ (target): bundles.find { it.name.contains(platformName(target)) }]
     }
     result.retainAll { it.value != null }
-    def missingBundles = hostTargets - result.keySet()
+    // linux_arm64 distributions are not built by the official CI, so publish its bundle only if it is present.
+    def optionalHostTargets = [KonanTarget.LINUX_ARM64] as Set
+    def missingBundles = hostTargets - optionalHostTargets - result.keySet()
     if (!missingBundles.isEmpty()) {
         println("Some of the archive bundles are missing for targets $missingBundles:")
         println(result)

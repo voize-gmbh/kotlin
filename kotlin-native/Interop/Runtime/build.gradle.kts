@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.tools.solib
 import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.cpp.CppUsage
 import org.jetbrains.kotlin.konan.target.HostManager
+import org.jetbrains.kotlin.konan.target.KonanTarget
 import org.jetbrains.kotlin.konan.target.TargetWithSanitizer
 import org.jetbrains.kotlin.tools.ToolExecutionTask
 
@@ -58,6 +59,12 @@ native {
         if (HostManager.hostIsMingw) {
             // Use binary hash as the timestamp in COFF headers.
             flags("-Wl,/Brepro")
+        }
+        if (HostManager.host == KonanTarget.LINUX_ARM64) {
+            // Otherwise clang picks `ld` from the GCC toolchain archive, which is an x86_64 binary.
+            flags("-fuse-ld=lld")
+            // Take the `__aarch64_*` outline-atomics helpers from compiler-rt builtins, as libgcc 8.3 doesn't have them.
+            flags("--rtlib=compiler-rt", "--unwindlib=libgcc")
         }
     }
     tasks.named(library).configure {
