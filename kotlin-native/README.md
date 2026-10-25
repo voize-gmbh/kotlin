@@ -58,7 +58,7 @@ Prerequisites:
 [Azul Zulu JDK8](https://www.azul.com/downloads/?version=java-8-lts&os=macos&architecture=arm-64-bit&package=jdk)
 
       Note: using `JDK x86_64` on `macOS aarch64` will cause `java.lang.UnsatisfiedLinkError` for `libclang.dylib`
-*   Linux: glibc 2.23 or newer
+*   Linux: glibc 2.29 or newer (required by the prebuilt LLVM distributions)
 *   Windows:
     * Microsoft C++ build tools for Visual Studio 2019 14.29.
       It might work with other VS2019 versions, but this was never tested.
