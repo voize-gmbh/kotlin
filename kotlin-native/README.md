@@ -100,6 +100,59 @@ To compile a faster, optimized binary, use `-opt`:
 
 	./dist/bin/kotlinc-native hello.kt -o hello -opt
 
+### Building on Linux aarch64
+
+JetBrains publishes neither LLVM and libffi builds nor a released Kotlin/Native distribution for Linux aarch64,
+so on such a host you build them yourself and bootstrap the compiler in several stages:
+
+1.  Use an aarch64 JDK (cinterop loads `libclang` into the JVM).
+2.  Build LLVM natively with [tools/llvm_builder](tools/llvm_builder/README.md), inside its `images/linux` Docker image
+    (pass the aarch64 CMake installer as the `CMAKE_DIST` build argument). The image keeps the glibc requirement of the
+    LLVM tools the same as for the official Linux x86_64 builds. Keep all LLVM targets in the final stage (the default),
+    and use the dev and essentials component sets to produce `llvm-21-aarch64-linux-dev-1` and
+    `llvm-21-aarch64-linux-essentials-1`, the names `kotlin-native/gradle.properties` refers to.
+3.  Build libffi with `kotlin-native/tools/libffi/build_for_linux.sh <output dir>`, which produces
+    `libffi-3.4.6-1-linux-aarch64.tar.gz`.
+4.  Unpack the LLVM and libffi archives into `~/.konan/dependencies`. Append each directory name as a separate line to
+    `~/.konan/dependencies/.extracted` so that the build does not try to download them.
+    The other dependencies (sysroots, Android NDK, MinGW) are downloaded as usual.
+5.  Build a local bootstrap compiler, because the released one does not know this host:
+
+        ./gradlew publish -Pkotlin.native.enabled=false -Pkotlin.native.home=<dir> --dependency-verification=lenient
+
+    Then set `bootstrap.local=true` and `bootstrap.local.version=<published version>` in `local.properties`.
+    Pass the two extra options to every Gradle invocation below as well:
+    * `kotlin.native.home` must point to a directory with empty `bin/` and `konan/` subdirectories. Without it, the
+      bootstrap Kotlin Gradle plugin tries to download a Linux aarch64 Kotlin/Native distribution for the
+      multiplatform projects in this repository, and there is none.
+    * `--dependency-verification=lenient` is needed because the Linux aarch64 Node.js archive is not listed in
+      `gradle/verification-metadata.xml`.
+6.  Stage 0: `:kotlin-native:libclangInterop` generates its bindings with a bootstrap Kotlin/Native distribution that
+    runs on this host, and none exists yet. Generate the bindings on another 64-bit host instead (they are taken from
+    `kotlin-native/libclangInterop/build/nativeInteropStubs` after building `:kotlin-native:libclangInterop`), copy them
+    to `kotlin-native/libclangInterop/gen/main-linux_arm64`, temporarily set `usePrebuiltSources` to `true` in
+    `kotlin-native/libclangInterop/build.gradle.kts`, and run `:kotlin-native:distCompiler` with
+    `-Pkotlin.native.enabled=true`. Copy `kotlin-native/dist` out of the repository, e.g. to `~/kn-stage0`. Then revert
+    the temporary change and delete `kotlin-native/libclangInterop/build/{kotlin,classes,libs}`.
+7.  Stage 1: run `:kotlin-native:distCompiler` with `-Pkotlin.native.bootstrap.distribution=$HOME/kn-stage0`, and copy
+    `kotlin-native/dist` to `~/kn-stage1`. The bindings are now generated on this host.
+8.  Stage 2: use the stage-1 compiler as the bootstrap distribution to build the standard library and the rest:
+
+        ./gradlew -Pkotlin.native.enabled=true -Pkotlin.native.bootstrap.distribution=$HOME/kn-stage1 :kotlin-native:bundle
+
+    The `kotlin.native.bootstrap.distribution` property accepts an absolute path to any unpacked Kotlin/Native
+    distribution. The build copies it and never modifies the original.
+9.  Optionally, add the Apple platform libraries, as in the official Linux distributions. On a macOS host, build them
+    from the same sources and version with `:kotlin-native:platformLibs:<target>Install` for each Apple target, and pack
+    `kotlin-native/dist/klib/platform` as `<any top-level directory>/klib/platform/<target>/...` into a `.tar.gz`.
+    Then repeat stage 2 with `-Pkotlin.native.pathToDarwinDist=<that archive>` and
+    `-Pkotlin.native.pathToHostDist=<a copy of the stage-2 prebuilt bundle>`. Both properties are required, and both
+    must point to archives.
+
+The resulting distribution supports the same targets as the Linux x86_64 one, and can compile libraries (but not
+binaries) for Apple targets if step 9 was done. It expects `llvm-21-aarch64-linux-essentials-1` and
+`libffi-3.4.6-1-linux-aarch64` in `~/.konan/dependencies` on every machine that uses it.
+
 ### Interoperability
 
 To import a C or Objective-C library, use `./dist/bin/cinterop` tool.

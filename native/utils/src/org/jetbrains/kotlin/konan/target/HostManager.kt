@@ -77,6 +77,7 @@ open class HostManager() {
 
     val enabledByHost: Map<KonanTarget, Set<KonanTarget>> = mapOf(
         LINUX_X64 to commonTargets,
+        LINUX_ARM64 to commonTargets,
         MINGW_X64 to commonTargets,
         MACOS_X64 to commonTargets + appleTargets,
         MACOS_ARM64 to commonTargets + appleTargets
@@ -128,7 +129,7 @@ open class HostManager() {
             get() = when (host) {
                 MACOS_X64,
                 MACOS_ARM64 -> "darwin"
-                LINUX_X64 -> "linux"
+                LINUX_X64, LINUX_ARM64 -> "linux"
                 MINGW_X64 -> "win32"
                 else -> throw TargetSupportException("Unknown host: $host.")
             }
@@ -154,6 +155,7 @@ open class HostManager() {
             Pair("osx", "x86_64") to MACOS_X64,
             Pair("osx", "aarch64") to MACOS_ARM64,
             Pair("linux", "x86_64") to LINUX_X64,
+            Pair("linux", "aarch64") to LINUX_ARM64,
             Pair("windows", "x86_64") to MINGW_X64
         )
 
