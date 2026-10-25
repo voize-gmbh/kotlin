@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.cacheFlavor
 import org.jetbrains.kotlin.konan.util.ArchiveType.TAR_GZ
 import org.jetbrains.kotlin.konan.util.ArchiveType.ZIP
 import org.jetbrains.kotlin.kotlinNativeDist
+import java.io.File
 import java.security.MessageDigest
 import kotlin.io.path.inputStream
 
@@ -240,19 +241,7 @@ fun Project.registerNativeReleasedDistribution(version: String): Provider<Native
         Create distribution hash
         */
         doLast {
-            val digest = MessageDigest.getInstance("SHA-256")
-            val buffer = ByteArray(1024 * 8)
-            distributionFiles.sorted().forEach { file ->
-                digest.update(file.name.encodeToByteArray())
-                file.toPath().inputStream().buffered().use { inputStream ->
-                    while (true) {
-                        val read = inputStream.read(buffer)
-                        if (read < 0) break
-                        digest.update(buffer, 0, read)
-                    }
-                }
-            }
-            val distributionHash = digest.digest().toHexString()
+            val distributionHash = sha256Of(distributionFiles.sorted().map { it.name to it })
             NativeDistribution(targetDirectory.get()).distributionFingerprint.asFile.writeText(distributionHash)
         }
     } else tasks.named<Sync>(syncTaskName)
@@ -261,7 +250,69 @@ fun Project.registerNativeReleasedDistribution(version: String): Provider<Native
 }
 
 /**
- * Get Native bootstrap distribution.
+ * Hex SHA-256 of [files]: each file's name followed by its contents, in the given order.
  */
-fun Project.registerNativeBootstrapDistribution(): Provider<NativeDistribution> =
+private fun sha256Of(files: List<Pair<String, File>>): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    val buffer = ByteArray(1024 * 8)
+    files.forEach { (name, file) ->
+        digest.update(name.encodeToByteArray())
+        file.toPath().inputStream().buffered().use { inputStream ->
+            while (true) {
+                val read = inputStream.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+    }
+    return digest.digest().toHexString()
+}
+
+/**
+ * Gradle property with an absolute path to an unpacked Native distribution to use as the bootstrap distribution
+ * instead of the released one, e.g. on a host without a released distribution.
+ */
+private const val NATIVE_BOOTSTRAP_DISTRIBUTION_PROPERTY = "kotlin.native.bootstrap.distribution"
+
+/**
+ * Copy of the unpacked Native distribution at [path] in the build directory.
+ *
+ * Builds that use the distribution may store files in it, so it is synced into the build directory
+ * rather than used in place: the directory at [path] is never modified.
+ */
+private fun Project.registerNativeLocalDistribution(path: String): Provider<NativeDistribution> {
+    val sourceDirectory = File(path)
+    check(sourceDirectory.isAbsolute) {
+        "Path to the Native bootstrap distribution must be absolute. $NATIVE_BOOTSTRAP_DISTRIBUTION_PROPERTY=`$path`"
+    }
+    check(sourceDirectory.isDirectory) {
+        "The Native bootstrap distribution must be an unpacked distribution directory. $NATIVE_BOOTSTRAP_DISTRIBUTION_PROPERTY=`$path`"
+    }
+    val targetDirectory = layout.buildDirectory.dir("nativeBootstrapDistributionLocal")
+    val syncTaskName = "syncNativeBootstrapDistributionLocal"
+    val syncTask = if (syncTaskName !in tasks.names) tasks.register<Sync>(syncTaskName) {
+        val sourceFiles = fileTree(sourceDirectory)
+        from(sourceFiles)
+        into(targetDirectory)
+
+        doLast {
+            val distributionFiles = sourceFiles.files.map { it.relativeTo(sourceDirectory).invariantSeparatorsPath to it }
+            val distributionHash = sha256Of(distributionFiles.sortedBy { it.first })
+            NativeDistribution(targetDirectory.get()).distributionFingerprint.asFile.writeText(distributionHash)
+        }
+    } else tasks.named<Sync>(syncTaskName)
+
+    return syncTask.map { NativeDistribution(targetDirectory.get()) }
+}
+
+/**
+ * Get Native bootstrap distribution: the released one, or the one at [NATIVE_BOOTSTRAP_DISTRIBUTION_PROPERTY] if it is set.
+ */
+fun Project.registerNativeBootstrapDistribution(): Provider<NativeDistribution> {
+    val localDistribution = providers.gradleProperty(NATIVE_BOOTSTRAP_DISTRIBUTION_PROPERTY).orNull
+    return if (localDistribution != null) {
+        registerNativeLocalDistribution(localDistribution)
+    } else {
         registerNativeReleasedDistribution(bootstrapKotlinVersion)
+    }
+}
