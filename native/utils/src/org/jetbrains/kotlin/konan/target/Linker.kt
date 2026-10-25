@@ -140,13 +140,51 @@ abstract class LinkerFlags(val configurables: Configurables) {
 class AndroidLinker(targetProperties: AndroidConfigurables)
     : LinkerFlags(targetProperties), AndroidConfigurables by targetProperties {
 
-    private val clangTarget = when (val targetString = targetProperties.targetTriple.toString()) {
+    // The target that the NDK's per-API clang wrappers are named after and pass to clang.
+    private val wrapperTarget = when (val targetString = targetProperties.targetTriple.toString()) {
         "arm-unknown-linux-androideabi" -> "armv7a-linux-androideabi"
         else -> targetProperties.targetTriple.withoutVendor()
     }
-    private val prefix = "$absoluteTargetToolchain/bin/${clangTarget}${Android.API}"
-    private val clang = if (HostManager.hostIsMingw) "$prefix-clang.cmd" else "$prefix-clang"
     private val llvmAr = "$absoluteLlvmHome/bin/llvm-ar"
+
+    private val clang: String
+        get() = when (androidLinkerDriver) {
+            AndroidLinkerDriver.NdkClang -> {
+                val prefix = "$absoluteTargetToolchain/bin/${wrapperTarget}${Android.API}"
+                if (HostManager.hostIsMingw) "$prefix-clang.cmd" else "$prefix-clang"
+            }
+            is AndroidLinkerDriver.HostLlvm -> "$absoluteLlvmHome/bin/clang"
+        }
+
+    /** The flags of the NDK's clang wrapper, plus the NDK's choice of linker and runtime libraries. */
+    private val hostLlvmDriverFlags = listOf(
+        "--target=${wrapperTarget}${Android.API}",
+        "-fno-addrsig",
+        "-fuse-ld=lld",
+        "--rtlib=libgcc",
+        "--unwindlib=libgcc",
+    )
+
+    /** The library directories that the NDK's clang searches by itself, after the ones given with `-L`. */
+    private fun hostLlvmLibDirs(driver: AndroidLinkerDriver.HostLlvm, triple: String): List<String> {
+        val androidTarget = target
+        val compilerRtArch = when (androidTarget) {
+            KonanTarget.ANDROID_ARM64 -> "aarch64"
+            KonanTarget.ANDROID_ARM32 -> "arm"
+            KonanTarget.ANDROID_X86 -> "i386"
+            KonanTarget.ANDROID_X64 -> "x86_64"
+            else -> error("$androidTarget is not an Android target")
+        }
+        val tripleLibDir = when (androidTarget) {
+            KonanTarget.ANDROID_ARM64, KonanTarget.ANDROID_X64 -> "lib64"
+            else -> "lib"
+        }
+        return listOf(
+            "-L$absoluteTargetToolchain/lib64/clang/${driver.ndkClangVersion}/lib/linux/$compilerRtArch",
+            "-L$absoluteTargetToolchain/lib/gcc/$triple/${driver.ndkGccVersion}",
+            "-L$absoluteTargetToolchain/$triple/$tripleLibDir",
+        )
+    }
 
     override val useCompilerDriverAsLinker: Boolean get() = true
 
@@ -169,7 +207,12 @@ class AndroidLinker(targetProperties: AndroidConfigurables)
                 if (target == KonanTarget.ANDROID_X64) "-L$apiSysroot/usr/lib64" else "-L$apiSysroot/usr/lib",
                 "-L$toolchainSysroot/usr/lib/$clangTarget/${Android.API}",
                 "-L$toolchainSysroot/usr/lib/$clangTarget")
+        val (driverFlags, implicitLibDirs) = when (val driver = androidLinkerDriver) {
+            AndroidLinkerDriver.NdkClang -> emptyList<String>() to emptyList()
+            is AndroidLinkerDriver.HostLlvm -> hostLlvmDriverFlags to hostLlvmLibDirs(driver, clangTarget)
+        }
         return listOf(Command(clang).apply {
+            +driverFlags
             +"-o"
             +executable
             when (kind) {
@@ -180,6 +223,7 @@ class AndroidLinker(targetProperties: AndroidConfigurables)
             +"-target"
             +clangTarget
             +libDirs
+            +implicitLibDirs
             +objectFiles
             if (optimize) +linkerOptimizationFlags
             if (!debug) +linkerNoDebugFlags
