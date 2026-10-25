@@ -132,4 +132,6 @@ interface GccConfigurables : Configurables, ClangFlags {
     val linkerGccFlags get() = targetList("linkerGccFlags")
 }
 
-interface AndroidConfigurables : Configurables, ClangFlags
+interface AndroidConfigurables : Configurables, ClangFlags {
+    val androidLinkerDriver: AndroidLinkerDriver
+}
