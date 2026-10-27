@@ -148,6 +148,11 @@ so on such a host you build them yourself and bootstrap the compiler in several 
     Then repeat stage 2 with `-Pkotlin.native.pathToDarwinDist=<that archive>` and
     `-Pkotlin.native.pathToHostDist=<a copy of the stage-2 prebuilt bundle>`. Both properties are required, and both
     must point to archives.
+10. To make the distribution interoperate with JetBrains' prebuilt caches, replace its standard library with the
+    official one and rebuild the linux_arm64 system caches with
+    [tools/linux_arm64_dist/repack_with_official_stdlib.sh](tools/linux_arm64_dist/repack_with_official_stdlib.sh).
+    JetBrains ships a standard library compiled by the bootstrap compiler, and its IR differs from one compiled by the
+    build itself. `smoke_test.sh` next to it checks the result.
 
 The resulting distribution supports the same targets as the Linux x86_64 one, and can compile libraries (but not
 binaries) for Apple targets if step 9 was done. It expects `llvm-21-aarch64-linux-essentials-1` and
