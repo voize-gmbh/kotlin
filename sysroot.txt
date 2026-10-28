@@ -1,0 +1,9 @@
+# Debian 10 (buster) arm64 packages for the sysroot aapt2 links against, so that it needs no glibc
+# newer than Debian 10's. Only glibc is linked dynamically; libgcc's static libraries are linked in.
+# <url> <sha256>
+http://archive.debian.org/debian-security/pool/updates/main/g/glibc/libc6_2.28-10+deb10u4_arm64.deb 299556e1d1bf80617b417c82521f1f0bcb111933c40016fbe8a303b73e6a6a22
+http://archive.debian.org/debian-security/pool/updates/main/g/glibc/libc6-dev_2.28-10+deb10u4_arm64.deb 353477d4bf9f766826231b30fde1a5941f177a4c5f27a60def988aaaca3c8437
+http://archive.debian.org/debian-security/pool/updates/main/l/linux/linux-libc-dev_4.19.316-1_arm64.deb c2d6fd3aa183084a070de1c102d48f718428c1ea8161f950ff68337577d46869
+http://archive.debian.org/debian/pool/main/g/gcc-8/libgcc-8-dev_8.3.0-6_arm64.deb d8385c0106d4ac559ada75b162aecb9d507a67da3ac8742eb32258f501d07c7e
+http://archive.debian.org/debian/pool/main/g/gcc-8/libgcc1_8.3.0-6_arm64.deb 2851ac25d12958586c035de5ec4f2fc17272dec48f776dd0dd24c62f62674fd9
+http://archive.debian.org/debian/pool/main/g/gcc-8/gcc-8-base_8.3.0-6_arm64.deb 41456860e929beec8ead5282cf6891db8fe213af86d46967e77f9b13b1c44bf2

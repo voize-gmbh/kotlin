@@ -1,0 +1,23 @@
+# AOSP sources of aapt2 2.20-13193326 (SDK build-tools 36.0.0).
+#
+# Build 13193326 lies between the daily snaps 13190096 (2025-03-10) and 13197820 (2025-03-11) of the
+# Android 16 release branch (25Q2-release, published as android16-release). Each revision below is the
+# head of that branch in its project at snap 13190096. Nothing aapt2 builds from changed between snaps
+# 13182071 (2025-03-07) and 13197820.
+#
+# <path> <repository> <commit> [<sparse paths>...]
+frameworks/base            https://android.googlesource.com/platform/frameworks/base            43fcf12f1e4c3f1128864fc8ca8f2552f8d33e53 tools/aapt2 libs/androidfw cmds/idmap2/libidmap2_policies NOTICE
+frameworks/native          https://android.googlesource.com/platform/frameworks/native          a07104434563d8a7ed9793076df233d68f65b036 include NOTICE
+system/core                https://android.googlesource.com/platform/system/core                54b350afe973486ea81bf7eff3779a831aa7c2cc libcutils libutils libsystem libprocessgroup/include NOTICE
+system/libbase             https://android.googlesource.com/platform/system/libbase             42b085b6f347c3239ac9b43a187f3c1a0a3dd921
+system/logging             https://android.googlesource.com/platform/system/logging             a24d8db155c93dd85a228e4d7967fd10bc93fea8 liblog NOTICE
+system/libziparchive       https://android.googlesource.com/platform/system/libziparchive       8c51527debf9394dfa515f7e6c7941d2720c6d01
+system/incremental_delivery https://android.googlesource.com/platform/system/incremental_delivery c999e3e207ec7633a172d773dda162746b6eaf18 incfs NOTICE
+external/expat             https://android.googlesource.com/platform/external/expat             7b60c4bbc175e795903c47ea9434289eb1d5e605
+external/libpng            https://android.googlesource.com/platform/external/libpng            6dd415783321a0c670387f0a5d51776b2c1f629a
+external/protobuf          https://android.googlesource.com/platform/external/protobuf          ba773a7e80bca3b79eee1926b6e8518a323f2d23
+external/zlib              https://android.googlesource.com/platform/external/zlib              c1f2595cae6ef4703003a8c9ea53239a10d7a1dd
+external/fmtlib            https://android.googlesource.com/platform/external/fmtlib            b94c6ae0bc963c4f38bce355fe74bec30eaf0be2
+build/soong                https://android.googlesource.com/platform/build/soong                3bdf2fe437137cd60a07096e1b9176776b2b99f8 cc/libbuildversion licenses/LICENSE
+libnativehelper            https://android.googlesource.com/platform/libnativehelper            5c36ece5ac42b20f0e384d9e57400f2f22aad9fb include_jni NOTICE
+external/googletest        https://android.googlesource.com/platform/external/googletest        ed43ae9f2f62df2b77e2400da414c126e7203e7a
